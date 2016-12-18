@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">涂鸦集</string>
+    <string name="enable_download_manager">下载管理器被禁用，请先启用下载管理器</string>
+    <string name="cancel">取消</string>
+    <string name="ok">确认</string>
+    <string name="null_content_name">名称信息为空</string>
+    <string name="copy_to_clipboard">已复制到剪切板</string>
+    <string name="retry">重试</string>
+    <string name="content_empty">内容为空</string>
+    <string name="save_img">保存图片？</string>
+    <string name="not_a_legal_link">不是一个有效的链接</string>
+    <string name="get_doodle_beyond_today">不能获取到今天之后的涂鸦</string>
+    <string name="get_doodle_before_19980830">不能获取到 1998-8-30 之前的涂鸦</string>
+    <string name="no_doodle_in_select_day">选择的日子内没有涂鸦</string>
+    <string name="today_in_history">历史上的今天</string>
+    <string name="action_share">分享</string>
+    <string name="action_link">查看原网页</string>
+    <string name="action_about">关于</string>
+    <string name="action_calender">时间点</string>
+    <string name="action_timeline">回到涂鸦时间轴</string>
+    <string name="miss_permission">缺少存储权限</string>
+</resources>
