@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">涂鸦集</string>
+    <string name="version">1.0.3</string>
     <string name="enable_download_manager">下载管理器被禁用，请先启用下载管理器</string>
     <string name="cancel">取消</string>
     <string name="ok">确认</string>
@@ -19,4 +20,10 @@
     <string name="action_calender">时间点</string>
     <string name="action_timeline">回到涂鸦时间轴</string>
     <string name="miss_permission">缺少存储权限</string>
+    <string name="action_load_from_cache_first">优先从缓存读取</string>
+
+    <string name="about_data_from">"    所有涂鸦数据均来自google官网，您可能需要科学上网才能获取数据"</string>
+    <string name="about_icon_from">"    图标出自酷友 @窝室过往 之手"</string>
+    <string name="about_source">"    源码可在 https://github.com/dreamcontinue/Doodles 找到"</string>
+    <string name="about_others">"    app还有很多未完善之处，但是明年准备考研了所以并不会有时间放在app上了"</string>
 </resources>

@@ -1,4 +1,4 @@
-package party.danyang.doodles;
+package party.danyang.doodles.utils;
 
 import android.Manifest;
 import android.app.Activity;
@@ -34,6 +34,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import party.danyang.doodles.R;
 import party.danyang.doodles.entity.Content;
 import party.danyang.doodles.entity.MonthDoodle;
 import rx.functions.Action1;

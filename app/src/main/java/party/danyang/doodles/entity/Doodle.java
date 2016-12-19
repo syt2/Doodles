@@ -1,14 +1,13 @@
 package party.danyang.doodles.entity;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
-import party.danyang.doodles.Utils;
+import party.danyang.doodles.utils.Utils;
 
 /**
  * Created by dream on 16-12-12.

@@ -1,5 +1,6 @@
 package party.danyang.doodles.ui;
 
+import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
@@ -25,12 +26,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import party.danyang.doodles.R;
-import party.danyang.doodles.Utils;
 import party.danyang.doodles.adapter.DoodleAdapter;
 import party.danyang.doodles.databinding.ActivityMainBinding;
 import party.danyang.doodles.entity.Doodle;
 import party.danyang.doodles.entity.MonthDoodle;
 import party.danyang.doodles.net.DoodleApi;
+import party.danyang.doodles.utils.PreferencesHelper;
+import party.danyang.doodles.utils.Utils;
 import party.danyang.doodles.widget.GroupRecyclerView;
 import rx.Observer;
 import rx.android.schedulers.AndroidSchedulers;
@@ -64,13 +66,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void initToolbar() {
         setSupportActionBar(binding.toolbar);
-        binding.toolbar.setNavigationIcon(R.drawable.ic_arrow_back_white_24dp);
-        binding.toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                supportFinishAfterTransition();
-            }
-        });
         binding.toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
@@ -174,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
             public void onRefresh() {
                 y = Utils.getYearOfNow();
                 m = Utils.getMonthOfNow();
-                loadData();
+                loadData(true);
             }
         });
     }
@@ -202,11 +197,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadData() {
-        MonthDoodle monthDoodle = Utils.getDoodleFromCache(MainActivity.this, y + "-" + m);
-        if (monthDoodle != null) {
-            setDoodlesToView(y, m, monthDoodle);
-            Log.e(TAG, "load data " + y + "-" + m + " from cache");
-            return;
+        loadData(false);
+    }
+
+    private void loadData(boolean fromSwipLoad) {
+        if (!fromSwipLoad && PreferencesHelper.getLoadFromCacheFirst(this)) {
+            MonthDoodle monthDoodle = Utils.getDoodleFromCache(MainActivity.this, y + "-" + m);
+            if (monthDoodle != null
+                    && monthDoodle.getChildrenList() != null && monthDoodle.getChildrenList().size() > 0) {
+                setDoodlesToView(y, m, monthDoodle);
+                isLoad = false;
+                Utils.setRefresher(binding.refresh, false);
+                Log.e(TAG, "load data " + y + "-" + m + " from cache");
+                return;
+            }
         }
 
         Utils.setRefresher(binding.refresh, true);
@@ -248,7 +252,10 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onNext(List<Doodle> doodles) {
                         if (doodles == null || doodles.size() == 0) {
-                            onError(new Exception(getString(R.string.content_empty)));
+                            Snackbar.make(binding.getRoot(), R.string.content_empty, Snackbar.LENGTH_LONG).show();
+                            isLoad = false;
+                            Utils.setRefresher(binding.refresh, false);
+                            return;
                         }
                         MonthDoodle monthDoodle = new MonthDoodle();
                         monthDoodle.setList(doodles);
@@ -268,46 +275,65 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        MenuItem timeline = menu.findItem(R.id.action_timeline);
-        if (inCustomDateMode) {
-            timeline.setVisible(true);
-        } else {
-            timeline.setVisible(false);
-        }
+        menu.findItem(R.id.action_timeline)
+                .setVisible(inCustomDateMode);
+        menu.findItem(R.id.action_load_from_cache_first)
+                .setChecked(PreferencesHelper.getLoadFromCacheFirst(this));
         return true;
     }
 
     private void onToolbarMenuItemClicked(final MenuItem menuItem) {
         int id = menuItem.getItemId();
-        if (id == R.id.action_calender) {
-            DatePickerDialog dialog = new DatePickerDialog(this, new DatePickerDialog.OnDateSetListener() {
-                @Override
-                public void onDateSet(DatePicker datePicker, int y, int m, int d) {
-                    ++m;
-                    if (y * 10000 + m * 100 + d >
-                            Utils.getYearOfNow() * 10000 + Utils.getMonthOfNow() * 100 + Utils.getDayOfNow()) {
-                        Snackbar.make(binding.getRoot(), R.string.get_doodle_beyond_today, Snackbar.LENGTH_LONG)
-                                .show();
-                    } else if (y * 10000 + m * 100 + d < 19980830) {
-                        Snackbar.make(binding.getRoot(), R.string.get_doodle_before_19980830, Snackbar.LENGTH_LONG)
-                                .show();
-                    } else {
-                        inCustomDateMode = true;
-                        loadCustomDateData(y, m, d);
-                        invalidateOptionsMenu();
-                    }
-                }
-            }, Utils.getYearOfNow(), Utils.getMonthOfNow() - 1, Utils.getDayOfNow());
-            dialog.show();
-            binding.refresh.setEnabled(false);
-        } else if (id == R.id.action_timeline) {
-            inCustomDateMode = false;
-            y = Utils.getYearOfNow();
-            m = Utils.getMonthOfNow();
-            binding.refresh.setEnabled(true);
-            loadData();
-            invalidateOptionsMenu();
+        switch (id) {
+            case R.id.action_calender:
+                showDatePickerDialog();
+                binding.refresh.setEnabled(false);
+                break;
+            case R.id.action_timeline:
+                inCustomDateMode = false;
+                y = Utils.getYearOfNow();
+                m = Utils.getMonthOfNow();
+                binding.refresh.setEnabled(true);
+                loadData();
+                invalidateOptionsMenu();
+                break;
+            case R.id.action_about:
+                showAboutDialog();
+                break;
+            case R.id.action_load_from_cache_first:
+                PreferencesHelper.setLoadFromCacheFirst(this, !menuItem.isChecked());
+                invalidateOptionsMenu();
+                break;
         }
+    }
+
+    private void showAboutDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(R.layout.layout_about_dialog);
+        builder.setPositiveButton(R.string.ok, null);
+        builder.show();
+    }
+
+    private void showDatePickerDialog() {
+        DatePickerDialog dialog = new DatePickerDialog(this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker datePicker, int y, int m, int d) {
+                ++m;
+                if (y * 10000 + m * 100 + d >
+                        Utils.getYearOfNow() * 10000 + Utils.getMonthOfNow() * 100 + Utils.getDayOfNow()) {
+                    Snackbar.make(binding.getRoot(), R.string.get_doodle_beyond_today, Snackbar.LENGTH_LONG)
+                            .show();
+                } else if (y * 10000 + m * 100 + d < 19980830) {
+                    Snackbar.make(binding.getRoot(), R.string.get_doodle_before_19980830, Snackbar.LENGTH_LONG)
+                            .show();
+                } else {
+                    inCustomDateMode = true;
+                    loadCustomDateData(y, m, d);
+                    invalidateOptionsMenu();
+                }
+            }
+        }, Utils.getYearOfNow(), Utils.getMonthOfNow() - 1, Utils.getDayOfNow());
+        dialog.show();
     }
 
     private void setCustomDoodlesToView(List<Doodle> doodles, final int day) {
@@ -328,6 +354,8 @@ public class MainActivity extends AppCompatActivity {
             Snackbar.make(binding.getRoot(), R.string.no_doodle_in_select_day, Snackbar.LENGTH_SHORT).show();
         }
 
+
+        adapter.clearGroups();
         if (doodlesInThatDay.size() > 0) {
             List<Integer> dateInThatDay = new ArrayList<Integer>();
             dateInThatDay.add(doodlesInThatDay.get(0).getDate().get(0));
@@ -335,6 +363,7 @@ public class MainActivity extends AppCompatActivity {
             dateInThatDay.add(doodlesInThatDay.get(0).getDate().get(2));
             monthDoodleInThatDay.setDate(dateInThatDay);
             monthDoodleInThatDay.setList(doodlesInThatDay);
+            adapter.addGroup(monthDoodleInThatDay);
         }
         if (doodles.size() > 0) {
             List<Integer> date = new ArrayList<Integer>();
@@ -342,11 +371,8 @@ public class MainActivity extends AppCompatActivity {
             date.add(doodles.get(0).getDate().get(1));
             monthDoodle.setDate(date);
             monthDoodle.setList(doodles);
+            adapter.addGroup(monthDoodle);
         }
-
-        adapter.clearGroups();
-        adapter.addGroup(monthDoodleInThatDay);
-        adapter.addGroup(monthDoodle);
 
         if (doodlesInThatDay.size() != 0) {
             binding.recy.updateStickyHeader(adapter, monthDoodleInThatDay);
@@ -356,10 +382,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadCustomDateData(final int year, final int month, final int day) {
-        MonthDoodle monthDoodle = Utils.getDoodleFromCache(MainActivity.this, year + "-" + month);
-        if (monthDoodle != null) {
-            setCustomDoodlesToView(monthDoodle.getChildrenList(), day);
-            return;
+        if (PreferencesHelper.getLoadFromCacheFirst(this)) {
+            MonthDoodle monthDoodle = Utils.getDoodleFromCache(MainActivity.this, year + "-" + month);
+            if (monthDoodle != null) {
+                setCustomDoodlesToView(monthDoodle.getChildrenList(), day);
+                isLoad = false;
+                Utils.setRefresher(binding.refresh, false);
+                return;
+            }
         }
         Utils.setRefresher(binding.refresh, true);
         isLoad = true;
@@ -393,7 +423,16 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onNext(List<Doodle> doodles) {
                         if (doodles == null || doodles.size() == 0) {
-                            onError(new Exception(getString(R.string.content_empty)));
+                            Snackbar.make(binding.getRoot(), R.string.content_empty, Snackbar.LENGTH_LONG)
+                                    .setAction(R.string.retry, new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            loadCustomDateData(year, month, day);
+                                        }
+                                    }).show();
+
+                            isLoad = false;
+                            Utils.setRefresher(binding.refresh, false);
                             return;
                         }
 

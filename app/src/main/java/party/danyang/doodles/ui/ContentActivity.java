@@ -27,13 +27,14 @@ import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.bumptech.glide.request.target.SimpleTarget;
 
 import party.danyang.doodles.R;
-import party.danyang.doodles.Utils;
 import party.danyang.doodles.adapter.SimpleDoodleAdapter;
 import party.danyang.doodles.databinding.ActivityContentBinding;
 import party.danyang.doodles.entity.Content;
 import party.danyang.doodles.entity.SimpleDoodle;
 import party.danyang.doodles.net.ContentApi;
 import party.danyang.doodles.net.ContentParser;
+import party.danyang.doodles.utils.PreferencesHelper;
+import party.danyang.doodles.utils.Utils;
 import rx.Observer;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -245,12 +246,14 @@ public class ContentActivity extends AppCompatActivity {
     }
 
     private void loadContent() {
-        Content content = Utils.getContenFromCache(this, name);
-        if (content != null) {
-            Log.e(TAG, "load content " + name + " from cache");
-            setContentToView(content);
-            binding.layoutNest.progressbar.hide();
-            return;
+        if (PreferencesHelper.getLoadFromCacheFirst(this)) {
+            Content content = Utils.getContenFromCache(this, name);
+            if (content != null) {
+                Log.e(TAG, "load content " + name + " from cache");
+                setContentToView(content);
+                binding.layoutNest.progressbar.hide();
+                return;
+            }
         }
 
         ContentApi.load(name)
@@ -350,7 +353,6 @@ public class ContentActivity extends AppCompatActivity {
             StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
             binding.layoutNest.recy.setLayoutManager(layoutManager);
             binding.layoutNest.recy.setAdapter(adapter);
-
         }
     }
 

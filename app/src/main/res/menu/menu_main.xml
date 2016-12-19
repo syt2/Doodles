@@ -15,9 +15,17 @@
         android:title="@string/action_timeline"
         app:showAsAction="ifRoom" />
 
-    <!--<item-->
-        <!--android:id="@+id/action_about"-->
-        <!--android:orderInCategory="110"-->
-        <!--android:title="@string/action_about"-->
-        <!--app:showAsAction="never" />-->
+    <item
+        android:id="@+id/action_about"
+        android:orderInCategory="120"
+        android:title="@string/action_about"
+        app:showAsAction="never" />
+
+    <item
+
+        android:checkable="true"
+        android:id="@+id/action_load_from_cache_first"
+        android:orderInCategory="110"
+        app:showAsAction="never"
+        android:title="@string/action_load_from_cache_first" />
 </menu>
